@@ -1,13 +1,15 @@
 // Copyright 2016 Mitchell Kember. Subject to the MIT License.
 
-#include "io.h"
+#include "translate.h"
 
 #include "code.h"
 
 #include <stdio.h>
 
+// The character to print when given invalid Morse code.
 static const char not_decodable = '?';
 
+// Transforms a character, if possible, to make it encodable.
 static char transform(char ch) {
 	if (ch >= 'a' && ch <= 'z') {
 		return ch + 'A' - 'a';
@@ -16,7 +18,7 @@ static char transform(char ch) {
 	}
 }
 
-void encode(void) {
+int encode(void) {
 	int input;
 	bool space = false;
 	while ((input = getchar()) != EOF) {
@@ -33,9 +35,10 @@ void encode(void) {
 			space = ch != '\n';
 		}
 	}
+	return 0;
 }
 
-void decode(void) {
+int decode(void) {
 	int ch = 0;
 	int size = 0;
 	Code code = 0;
@@ -67,7 +70,5 @@ void decode(void) {
 			putchar(ch);
 		}
 	}
-}
-
-void interactive(void) {
+	return 0;
 }
