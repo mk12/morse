@@ -18,14 +18,19 @@ static char transform(char ch) {
 
 void encode(void) {
 	int input;
+	bool space = false;
 	while ((input = getchar()) != EOF) {
 		char ch = transform((char)input);
 		Code code = char_to_code(ch);
 		if (code) {
+			if (space) {
+				putchar(' ');
+			}
 			print_dots_dashes(code);
-			putchar(' ');
+			space = true;
 		} else {
 			putchar(ch);
+			space = ch != '\n';
 		}
 	}
 }
