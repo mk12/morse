@@ -81,12 +81,52 @@ int interact(void) {
 	int ch;
 	for (int i = 0;; i++) {
 		const int input = kbd_input;
+		time_t elapsed = elapsed_ms(&tv);
 		if (input == EOF || input == EOT) {
 			break;
 		} else if (input) {
-			printf("Thread got a key: %c/%ld\n", input, input);
 			kbd_input = 0;
 			kbd_acknowledged = true;
+			switch (mode) {
+			case IDLE:
+				break;
+			case DOT:
+				putchar('\b');
+				putchar('.');
+				break;
+			case DASH:
+				putchar('\b');
+				putchar('-');
+				break;
+			case CHAR:
+				break;
+			case WORD:
+				break;
+			}
+			mode = DOT;
+			gettimeofday(&tv, NULL);
+		} else {
+			switch (mode) {
+			case IDLE:
+				break;
+			case DOT:
+				if (elapsed > 300) {
+					mode = DASH;
+				}
+				break;
+			case DASH:
+				if (elapsed > 1200) {
+					mode = CHAR;
+				}
+				break;
+			case CHAR:
+				if (elapsed > 3000) {
+					mode = WORD;
+				}
+				break;
+			case WORD:
+				break;
+			}
 		}
 		usleep(1000);
 	}
