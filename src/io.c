@@ -20,8 +20,9 @@ void encode(void) {
 	int input;
 	while ((input = getchar()) != EOF) {
 		char ch = transform((char)input);
-		if (valid_char(ch)) {
-			print_dots_dashes(char_to_code(ch));
+		Code code = char_to_code(ch);
+		if (code) {
+			print_dots_dashes(code);
 			putchar(' ');
 		} else {
 			putchar(ch);

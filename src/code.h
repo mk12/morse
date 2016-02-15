@@ -9,7 +9,6 @@
 
 typedef unsigned int Code;
 
-bool valid_char(char ch);
 Code add_size(Code bits, int size);
 Code char_to_code(char ch);
 char code_to_char(Code code);
