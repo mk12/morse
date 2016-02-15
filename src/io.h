@@ -11,4 +11,8 @@ void encode(void);
 // result to standard output as characters.
 void decode(void);
 
+// Allows the user to input Morse code by tapping a key. Decodes the signal and
+// prints the characters interactively.
+void interactive(void);
+
 #endif

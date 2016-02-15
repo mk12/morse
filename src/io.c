@@ -63,3 +63,6 @@ void decode(void) {
 		}
 	}
 }
+
+void interactive(void) {
+}
