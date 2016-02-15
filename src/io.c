@@ -6,14 +6,22 @@
 
 #include <stdio.h>
 
+static const char not_decodable = '?';
+
+static char transform(char ch) {
+	if (ch >= 'a' && ch <= 'z') {
+		return ch + 'A' - 'a';
+	} else {
+		return ch;
+	}
+}
+
 void encode(void) {
-	int ch;
-	while ((ch = getchar()) != EOF) {
-		if (ch >= 'a' && ch <= 'z') {
-			ch += 'A' - 'a';
-		}
-		if (ch >= 'A' && ch <= 'Z') {
-			print_dd(char_to_code((char)ch));
+	int input;
+	while ((input = getchar()) != EOF) {
+		char ch = transform((char)input);
+		if (valid_char(ch)) {
+			print_dots_dashes(char_to_code(ch));
 			putchar(' ');
 		} else {
 			putchar(ch);
@@ -35,9 +43,13 @@ void decode(void) {
 			code |= 1;
 			size++;
 		} else if (size > 0) {
-			code = add_size(code, size);
-			char dec = code_to_char(code);
-			putchar(dec == '\0' ? '?' : dec);
+			if (size > MAX_SIZE) {
+				putchar(not_decodable);
+			} else {
+				code = add_size(code, size);
+				char dec = code_to_char(code);
+				putchar(dec ? dec : not_decodable);
+			}
 			if (ch == '\n') {
 				putchar('\n');
 			}
@@ -47,12 +59,6 @@ void decode(void) {
 			break;
 		} else {
 			putchar(ch);
-		}
-
-		if (size > MAX_SIZE) {
-			putchar('?');
-			code = 0;
-			size = 0;
 		}
 	}
 }

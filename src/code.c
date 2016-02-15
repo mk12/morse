@@ -74,6 +74,10 @@ static const char char_table[CODE_LIMIT] = {
 	[0b1100100] = 'Z'
 };
 
+bool valid_char(char ch) {
+	return ch >= 'A' && ch <= 'Z';
+}
+
 Code add_size(Code bits, int size) {
 	assert(size <= SIZE_MASK);
 	return (bits << N_SIZE_BITS) | (Code)size;
@@ -88,7 +92,7 @@ char code_to_char(Code code) {
 	return char_table[code];
 }
 
-void print_dd(Code code) {
+void print_dots_dashes(Code code) {
 	const int size = code & SIZE_MASK;
 	Code mask = 1 << (N_SIZE_BITS + size - 1);
 	while (mask > SIZE_MASK) {
