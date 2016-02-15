@@ -1,5 +1,6 @@
 // Copyright 2016 Mitchell Kember. Subject to the MIT License.
 
+#include "interact.h"
 #include "translate.h"
 
 #include <stdbool.h>
@@ -23,7 +24,7 @@ int main(int argc, char **argv) {
 	case 'd':
 		return decode();
 	case 'i':
-		return interactive();
+		return interact();
 	default:
 		fputs(usage_msg, stderr);
 		return 1;

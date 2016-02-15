@@ -4,6 +4,7 @@
 
 #include "code.h"
 
+#include <stdbool.h>
 #include <stdio.h>
 
 // The character to print when given invalid Morse code.

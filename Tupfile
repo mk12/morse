@@ -3,7 +3,7 @@ OPTIONS = -std=c11 -Os
 WARNINGS = -Weverything -pedantic
 NOWARNINGS = -Wno-gnu-binary-literal
 COMPILE = $(CC) $(OPTIONS) $(WARNINGS) $(NOWARNINGS) -c
-LINK = $(CC)
+LINK = $(CC) -lpthread
 
 : foreach src/*.c |> ^ CC %f^ $(COMPILE) %f -o %o |> build/%B.o
 : build/*.o |> ^ Linking binary "morse"^ $(LINK) %f -o %o |> bin/morse
