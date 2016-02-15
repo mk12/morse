@@ -7,11 +7,22 @@
 
 #define MAX_SIZE 7
 
+// A Code is a Morse code representation of one character. It uses off bits (0)
+// to represent dots and on bits (1) to represent dashes. The number of bits
+// that contain this information is stored in the lower 3 bits. The actual
+// information is stored in the remaning upper bits.
 typedef unsigned int Code;
 
+// Encodes size information together with Morse code bits.
 Code add_size(Code bits, int size);
+
+// Converts a character to Morse code.
 Code char_to_code(char ch);
+
+// Converts Morse code to a character.
 char code_to_char(Code code);
+
+// Prints Morse code as a series of dots and dashes.
 void print_dots_dashes(Code code);
 
 #endif
