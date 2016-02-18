@@ -2,6 +2,8 @@
 
 #include "interact.h"
 
+#include "util.h"
+
 #include <pthread.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -25,7 +27,7 @@ static int kbd_input = 0;
 static bool kbd_acknowledged = false;
 
 // Make standard input unbuffered by turning off canonical mode.
-static void setup_unbuffered_input(void) {
+static void use_unbuffered_input(void) {
 	struct termios ctrl;
 	tcgetattr(STDIN_FILENO, &ctrl);
 	ctrl.c_lflag &= (unsigned long)~ICANON;
@@ -39,11 +41,15 @@ static void *listen(void *arg) {
 	bool waiting = false;
 	for (;;) {
 		if (waiting) {
+			// Complete the handshake.
 			if (kbd_acknowledged) {
 				waiting = false;
 			}
 		} else {
+			// Get a character (this blocks).
 			const int ch = getchar();
+
+			// Initiate the handshake.
 			kbd_acknowledged = false;
 			kbd_input = ch;
 			if (ch == EOF || ch == EOT) {
@@ -65,18 +71,22 @@ static time_t elapsed_ms(const struct timeval *start) {
 }
 
 int interact(int time_unit) {
-	setup_unbuffered_input();
+	// Configure standard input.
+	use_unbuffered_input();
+	
+	// Create the keyboard listener thread.
 	pthread_t listen_thread;
 	if (pthread_create(&listen_thread, NULL, listen, NULL)) {
-		fputs("morse: error creating thread\n", stderr);
-		return 1;
+		return print_error("error creating thread");
 	}
 
+	// Initialize the state.
 	enum { IDLE, DOT, DASH, CHAR, WORD } mode = IDLE;
 	struct timeval tv;
 	gettimeofday(&tv, NULL);
-	int ch;
-	for (int i = 0;; i++) {
+
+	// Begin the main loop.
+	for (;;) {
 		const int input = kbd_input;
 		time_t elapsed = elapsed_ms(&tv);
 		if (input == EOF || input == EOT) {

@@ -2,39 +2,19 @@
 
 #include "interact.h"
 #include "translate.h"
+#include "util.h"
 
 #include <stdbool.h>
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include <unistd.h>
 
-// String constants.
-static const char *prog_name; // set in main
-static const char *const usage_msg = "usage: morse [-e | -d | -i time_unit]\n";
-
-// Default parameter values.
-static const int default_mode = 'e';
-static const int default_time_unit = 100;
-
-// Parse a string as an int. Exits on failure.
-static int parse_int(const char *str) {
-	char *end;
-	int n = (int)strtol(str, &end, 0);
-	if (*end) {
-		fprintf(stderr, "%s: %s: not an integer\n", prog_name, str);
-		exit(1);
-	}
-	return n;
-}
-
 int main(int argc, char **argv) {
-	// Set the program name to be used in error messages.
+	// Set the program name.
 	prog_name = argv[0];
 
-	// Initialize parameters to default values.
-	int mode = default_mode;
-	int time_unit = default_time_unit;
+	// Initialize options to default values.
+	int mode = 'e';
+	int time_unit = 0;
 
 	// Get command line options.
 	int c;
@@ -43,8 +23,7 @@ int main(int argc, char **argv) {
 	while ((c = getopt(argc, argv, "hedi:")) != -1) {
 		switch (c) {
 		case 'h':
-			fputs(usage_msg, stdout);
-			return 0;
+			return print_usage(0);
 		case 'i':
 			time_unit = parse_int(optarg);
 			// fall through
@@ -58,8 +37,7 @@ int main(int argc, char **argv) {
 	}
 	// Make sure all arguments were processed.
 	if (optind != argc) {
-		fputs(usage_msg, stderr);
-		return 1;
+		return print_usage(1);
 	}
 
 	// Dispatch to the chosen subprogram.
