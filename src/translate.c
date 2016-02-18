@@ -26,11 +26,15 @@ int encode(void) {
 		switch (input) {
 		case ' ':
 		case '\t':
-			mode = NEW_WORD;
+			if (mode != FIRST) {
+				mode = NEW_WORD;
+			}
 			break;
 		case '\n':
-			putchar('\n');
-			mode = FIRST;
+			if (mode != FIRST) {
+				putchar('\n');
+				mode = FIRST;
+			}
 			break;
 		default:;
 			char ch = transform((char)input);
@@ -47,7 +51,7 @@ int encode(void) {
 				putchar(' ');
 				break;
 			}
-			// Print dots and dashes.
+			// Print dots and dashes if possible.
 			if (code) {
 				print_dots_dashes(code);
 			} else {
@@ -61,36 +65,56 @@ int encode(void) {
 }
 
 int decode(void) {
-	int ch = 0;
+	int input;
+	bool first = true;
 	int size = 0;
 	Code code = 0;
-	for (;;) {
-		ch = getchar();
-		if (ch == EOF) {
-			break;
-		} else if (ch == '.') {
+	while ((input = getchar()) != EOF) {
+		switch (input) {
+		case '.':
+			// Encode a dot.
 			code <<= 1;
 			size++;
-		} else if (ch == '-') {
+			break;
+		case '-':
+			// Encode a dash.
 			code <<= 1;
 			code |= 1;
 			size++;
-		} else if (size > 0) {
-			if (size > MAX_SIZE) {
-				putchar(not_decodable);
-			} else {
-				// Decode and print the character.
-				code = add_size(code, size);
-				char dec = code_to_char(code);
-				putchar(dec ? dec : not_decodable);
+			break;
+		case ' ':
+		case '\t':
+		case '\n':
+			if (size > 0) {
+				if (size > MAX_SIZE) {
+					// The sequence of dots and dashes was too long.
+					putchar(not_decodable);
+				} else {
+					// Decode and print the character if possible.
+					code = add_size(code, size);
+					char dec = code_to_char(code);
+					putchar(dec ? dec : not_decodable);
+				}
+				first = false;
+				code = 0;
+				size = 0;
 			}
-			if (ch != ' ') {
-				putchar(ch);
+			// Print a newline if there has been output on this line.
+			if (!first && input == '\n') {
+				putchar('\n');
+				first = true;
 			}
-			code = 0;
-			size = 0;
-		} else {
-			putchar(ch);
+			break;
+		case '/':
+			// Print the word separator.
+			putchar(' ');
+			first = false;
+			break;
+		default:
+			// Print the input character unchanged.
+			putchar(input);
+			first = false;
+			break;
 		}
 	}
 	return 0;
