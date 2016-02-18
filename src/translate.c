@@ -21,19 +21,40 @@ static char transform(char ch) {
 
 int encode(void) {
 	int input;
-	bool space = false;
+	enum { FIRST, NEW_LETTER, NEW_WORD } mode = FIRST;
 	while ((input = getchar()) != EOF) {
-		char ch = transform((char)input);
-		Code code = char_to_code(ch);
-		if (code) {
-			if (space) {
+		switch (input) {
+		case ' ':
+		case '\t':
+			mode = NEW_WORD;
+			break;
+		case '\n':
+			putchar('\n');
+			mode = FIRST;
+			break;
+		default:;
+			char ch = transform((char)input);
+			Code code = char_to_code(ch);
+			// Print the letter or word separator.
+			switch (mode) {
+			case FIRST:
+				break;
+			case NEW_WORD:
 				putchar(' ');
+				putchar('/');
+				// fall through
+			case NEW_LETTER:
+				putchar(' ');
+				break;
 			}
-			print_dots_dashes(code);
-			space = true;
-		} else {
-			putchar(ch);
-			space = ch != '\n';
+			// Print dots and dashes.
+			if (code) {
+				print_dots_dashes(code);
+			} else {
+				putchar(input);
+			}
+			mode = NEW_LETTER;
+			break;
 		}
 	}
 	return 0;
@@ -45,7 +66,9 @@ int decode(void) {
 	Code code = 0;
 	for (;;) {
 		ch = getchar();
-		if (ch == '.') {
+		if (ch == EOF) {
+			break;
+		} else if (ch == '.') {
 			code <<= 1;
 			size++;
 		} else if (ch == '-') {
@@ -56,17 +79,16 @@ int decode(void) {
 			if (size > MAX_SIZE) {
 				putchar(not_decodable);
 			} else {
+				// Decode and print the character.
 				code = add_size(code, size);
 				char dec = code_to_char(code);
 				putchar(dec ? dec : not_decodable);
 			}
-			if (ch == '\n') {
-				putchar('\n');
+			if (ch != ' ') {
+				putchar(ch);
 			}
 			code = 0;
 			size = 0;
-		} else if (ch == EOF) {
-			break;
 		} else {
 			putchar(ch);
 		}

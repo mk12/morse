@@ -16,10 +16,10 @@ typedef unsigned int Code;
 // Encodes size information together with Morse code bits.
 Code add_size(Code bits, int size);
 
-// Converts a character to Morse code.
+// Converts a character to Morse code. Returns zero if it could not convert.
 Code char_to_code(char ch);
 
-// Converts Morse code to a character.
+// Converts Morse code to a character. Returns zero if it could not convert.
 char code_to_char(Code code);
 
 // Prints Morse code as a series of dots and dashes.
