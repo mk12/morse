@@ -22,6 +22,7 @@ static char transform(char ch) {
 int encode(void) {
 	int input;
 	enum { FIRST, NEW_LETTER, NEW_WORD } mode = FIRST;
+
 	while ((input = getchar()) != EOF) {
 		switch (input) {
 		case ' ':
@@ -69,7 +70,9 @@ int decode(void) {
 	bool first = true;
 	int size = 0;
 	Code code = 0;
-	while ((input = getchar()) != EOF) {
+
+	do {
+		input = getchar();
 		switch (input) {
 		case '.':
 			// Encode a dot.
@@ -85,6 +88,7 @@ int decode(void) {
 		case ' ':
 		case '\t':
 		case '\n':
+		case EOF:
 			if (size > 0) {
 				if (size > MAX_SIZE) {
 					// The sequence of dots and dashes was too long.
@@ -116,6 +120,6 @@ int decode(void) {
 			first = false;
 			break;
 		}
-	}
+	} while (input != EOF);
 	return 0;
 }
