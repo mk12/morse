@@ -20,9 +20,6 @@ static const int time_between_words = 7;
 // End of transmission character.
 static const int EOT = 4;
 
-// The unit time interval, in milliseconds.
-static int time_unit = 100;
-
 // Used to communicate keyboard input between threads.
 static int kbd_input = 0;
 static bool kbd_acknowledged = false;
@@ -59,7 +56,7 @@ static void *listen(void *arg) {
 }
 
 // Returns the time elapsed in milliseconds since the given start time.
-static time_t elapsed_ms(struct timeval *start) {
+static time_t elapsed_ms(const struct timeval *start) {
 	struct timeval end;
 	gettimeofday(&end, NULL);
 	time_t sec = end.tv_sec - start->tv_sec;
@@ -67,7 +64,7 @@ static time_t elapsed_ms(struct timeval *start) {
 	return (sec * 1000 + micro / 1000);
 }
 
-int interact(void) {
+int interact(int time_unit) {
 	setup_unbuffered_input();
 	pthread_t listen_thread;
 	if (pthread_create(&listen_thread, NULL, listen, NULL)) {
