@@ -17,7 +17,7 @@ static const int time_dot = 1;
 static const int time_dash = 3;
 static const int time_between_signals = 1;
 static const int time_between_letters = 3;
-static const int time_between_words = 7;
+/* static const int time_between_words = 7; */
 
 // End of transmission character.
 static const int EOT = 4;
@@ -48,6 +48,7 @@ static void *listen(void *arg) {
 		} else {
 			// Get a character (this blocks).
 			const int ch = getchar();
+			putchar('\b');
 
 			// Initiate the handshake.
 			kbd_acknowledged = false;
@@ -73,6 +74,9 @@ static time_t elapsed_ms(const struct timeval *start) {
 int interact(int time_unit) {
 	// Configure standard input.
 	use_unbuffered_input();
+
+	char buf[512] = {'\r', 0};
+	int bufind=1;
 	
 	// Create the keyboard listener thread.
 	pthread_t listen_thread;
@@ -83,6 +87,7 @@ int interact(int time_unit) {
 	// Initialize the state.
 	enum { IDLE, DOT, DASH, CHAR, WORD } mode = IDLE;
 	struct timeval tv;
+	int prev_char = -5;
 	gettimeofday(&tv, NULL);
 
 	// Begin the main loop.
@@ -91,51 +96,64 @@ int interact(int time_unit) {
 		time_t elapsed = elapsed_ms(&tv);
 		if (input == EOF || input == EOT) {
 			break;
-		} else if (input) {
+		}
+		if (input) {
 			kbd_input = 0;
 			kbd_acknowledged = true;
+		}
+		if (input && input != prev_char) {
 			switch (mode) {
 			case IDLE:
+				mode = DOT;
 				break;
 			case DOT:
-				putchar('\b');
-				putchar('.');
+				buf[bufind++] = '.';
+				mode = CHAR;
 				break;
 			case DASH:
-				putchar('\b');
-				putchar('-');
+				buf[bufind++] = '-';
+				mode = CHAR;
 				break;
 			case CHAR:
+				mode = DOT;
 				break;
 			case WORD:
+				mode = DOT;
 				break;
 			}
-			mode = DOT;
 			gettimeofday(&tv, NULL);
+			prev_char = input;
 		} else {
 			switch (mode) {
 			case IDLE:
 				break;
 			case DOT:
-				if (elapsed > 300) {
+				if (elapsed > time_unit * time_dot) {
 					mode = DASH;
 				}
 				break;
 			case DASH:
-				if (elapsed > 1200) {
-					mode = CHAR;
+				if (elapsed > time_unit * time_dash) {
+					mode = IDLE;
 				}
 				break;
 			case CHAR:
-				if (elapsed > 3000) {
+				if (elapsed > time_unit * time_between_signals) {
+					buf[bufind++] = ' ';
 					mode = WORD;
 				}
 				break;
 			case WORD:
+				if (elapsed > time_unit * time_between_letters) {
+					buf[bufind++] = '/';
+					buf[bufind++] = ' ';
+					mode = IDLE;
+				}
 				break;
 			}
 		}
-		usleep(1000);
+		fputs(buf, stdout);
+		usleep(100);
 	}
 	return 0;
 }
