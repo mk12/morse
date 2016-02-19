@@ -17,14 +17,12 @@ static const int time_dot = 1;
 static const int time_dash = 3;
 static const int time_between_signals = 1;
 static const int time_between_letters = 3;
-/* static const int time_between_words = 7; */
 
 // End of transmission character.
 static const int EOT = 4;
 
 // Used to communicate keyboard input between threads.
-static int kbd_input = 0;
-static bool kbd_acknowledged = false;
+static enum { KBD_UP, KBD_DOWN, KBD_EOF } kbd_input = KBD_UP;
 
 // Make standard input unbuffered by turning off canonical mode.
 static void use_unbuffered_input(void) {
@@ -38,25 +36,12 @@ static void use_unbuffered_input(void) {
 static void *listen(void *arg) {
 	(void)arg;
 
-	bool waiting = false;
 	for (;;) {
-		if (waiting) {
-			// Complete the handshake.
-			if (kbd_acknowledged) {
-				waiting = false;
-			}
-		} else {
-			// Get a character (this blocks).
-			const int ch = getchar();
-			putchar('\b');
-
-			// Initiate the handshake.
-			kbd_acknowledged = false;
-			kbd_input = ch;
-			if (ch == EOF || ch == EOT) {
-				return NULL;
-			}
-			waiting = true;
+		// Get a character (this blocks).
+		const int ch = getchar();
+		if (ch == EOF || ch == EOT) {
+			kbd_input = KBD_EOF;
+			break;
 		}
 		usleep(100);
 	}
@@ -92,55 +77,57 @@ int interact(int time_unit) {
 
 	// Begin the main loop.
 	for (;;) {
-		const int input = kbd_input;
 		time_t elapsed = elapsed_ms(&tv);
-		if (input == EOF || input == EOT) {
-			break;
-		}
-		if (input) {
-			kbd_input = 0;
-			kbd_acknowledged = true;
-		}
-		if (input && input != prev_char) {
+		switch (kbd_input) {
+		case KBD_EOF:
+			return 0;
+		case KBD_DOWN:
 			switch (mode) {
 			case IDLE:
 				mode = DOT;
-				break;
-			case DOT:
-				buf[bufind++] = '.';
-				mode = CHAR;
-				break;
-			case DASH:
-				buf[bufind++] = '-';
-				mode = CHAR;
-				break;
-			case CHAR:
-				mode = DOT;
-				break;
-			case WORD:
-				mode = DOT;
-				break;
-			}
-			gettimeofday(&tv, NULL);
-			prev_char = input;
-		} else {
-			switch (mode) {
-			case IDLE:
+				gettimeofday(&tv, NULL);
 				break;
 			case DOT:
 				if (elapsed > time_unit * time_dot) {
 					mode = DASH;
+					gettimeofday(&tv, NULL);
 				}
 				break;
 			case DASH:
 				if (elapsed > time_unit * time_dash) {
 					mode = IDLE;
+					gettimeofday(&tv, NULL);
 				}
+				break;
+			case CHAR:
+				mode = DOT;
+				gettimeofday(&tv, NULL);
+				break;
+			case WORD:
+				mode = DOT;
+				gettimeofday(&tv, NULL);
+				break;
+			}
+			break;
+		case KBD_UP:
+			switch (mode) {
+			case IDLE:
+				break;
+			case DOT:
+				buf[bufind++] = '.';
+				mode = CHAR;
+				gettimeofday(&tv, NULL);
+				break;
+			case DASH:
+				buf[bufind++] = '-';
+				mode = CHAR;
+				gettimeofday(&tv, NULL);
 				break;
 			case CHAR:
 				if (elapsed > time_unit * time_between_signals) {
 					buf[bufind++] = ' ';
 					mode = WORD;
+					gettimeofday(&tv, NULL);
 				}
 				break;
 			case WORD:
@@ -148,9 +135,11 @@ int interact(int time_unit) {
 					buf[bufind++] = '/';
 					buf[bufind++] = ' ';
 					mode = IDLE;
+					gettimeofday(&tv, NULL);
 				}
 				break;
 			}
+			break;
 		}
 		fputs(buf, stdout);
 		usleep(100);
