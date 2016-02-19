@@ -85,10 +85,8 @@ int decode(void) {
 			code |= 1;
 			size++;
 			break;
-		case ' ':
-		case '\t':
-		case '\n':
-		case EOF:
+		default:
+			// Check if we have built up a code.
 			if (size > 0) {
 				if (size > MAX_SIZE) {
 					// The sequence of dots and dashes was too long.
@@ -103,21 +101,31 @@ int decode(void) {
 				code = 0;
 				size = 0;
 			}
-			// Print a newline if there has been output on this line.
-			if (!first && input == '\n') {
-				putchar('\n');
-				first = true;
+			// Check what character marks the end of the code.
+			switch (input) {
+			case '\n':
+				if (!first) {
+					// This line already has output, so start a new line.
+					putchar('\n');
+					first = true;
+				}
+				break;
+			case '/':
+				// Print the word separator.
+				putchar(' ');
+				first = false;
+				break;
+			case ' ':
+			case '\t':
+			case EOF:
+				// Do nothing for these code separators.
+				break;
+			default:
+				// Print the input character unchanged.
+				putchar(input);
+				first = false;
+				break;
 			}
-			break;
-		case '/':
-			// Print the word separator.
-			putchar(' ');
-			first = false;
-			break;
-		default:
-			// Print the input character unchanged.
-			putchar(input);
-			first = false;
 			break;
 		}
 	} while (input != EOF);
