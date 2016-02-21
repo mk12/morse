@@ -28,6 +28,7 @@ int main(int argc, char **argv) {
 			mode = c;
 			break;
 		case '?':
+			print_usage(stderr);
 			return 1;
 		}
 	}
