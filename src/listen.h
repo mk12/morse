@@ -5,21 +5,19 @@
 
 #include <stdbool.h>
 
-// This module simulates the ability to check if a key is pressed or released.
-// It does this under the assumption that a pressed key will, after a delay,
-// repeat its character input into stdin at fixed intervals.
-
-// Prompts the user to hold down a key and calibrates to the repeat rate. This
-// must be called once before spawning the listener thread.
-void calibrate_listener(void);
+// Prompts the user to hold down a key and calibrates to the keyboard repeat
+// settings. This must be called once before spawning the listener thread.
+// Returns EOF if an end-of-file condition occurred; otherwise, returns 0.
+int calibrate_listener(void);
 
 // Spawns the keyboard listener thread. Returns true on success.
 bool spawn_listener(void);
 
-// Gets the current state of the listener, given the time since the program
-// started in milliseconds. Must have already spawned the listener thread.
-// Returns the character of the key currently being pressed; returns 0 if there
-// is none. Returns EOF on an end-of-file condition.
-int get_listener_state(long time_now);
+// Gets the listener's repeat count. Must have already spawned the listener.
+// Returns 0 initially; after a key has been pressed and released, the next call
+// returns the number of key repeats that occurred, including the intial press.
+// Subsequent calls return 0 until a key is pressed and released again. Returns
+// EOF if an end-of-file condition is encountered.
+int get_listener_count(void);
 
 #endif

@@ -7,109 +7,62 @@
 
 #include <signal.h>
 #include <stdio.h>
-#include <time.h>
+#include <stdlib.h>
+#include <unistd.h>
 
-// Time intervals for interactive mode, expressed in multiples of the unit.
-static const int time_dot = 1;
-static const int time_dash = 3;
-static const int time_between_signals = 1;
-static const int time_between_letters = 3;
+// Shows or hides the cursor in the terminal.
+static void set_cursor(bool show) {
+	if (show) {
+		fputs("\x1B[?25h", stdout);
+	} else {
+		fputs("\x1B[?25l", stdout);
+	}
+}
 
-static void int_handler(int unused) {
+// Handles SIGINT, the interrupt signal (Ctrl-C).
+static void sigint_handler(int) __attribute__((noreturn));
+static void sigint_handler(int unused) {
 	(void)unused;
-	printf("\e[?25h");
+	set_cursor(true);
 	exit(0);
 }
 
-int transmit(int time_unit) {
-	printf("\e[?25l");
-	signal(SIGINT, int_handler);
-	calibrate_listener();
+int transmit(void) {
+	// Hide the cursor, and make sure it comes back before exiting.
+	set_cursor(false);
+	signal(SIGINT, sigint_handler);
+
+	// Set up the keyboard listener.
+	long time_unit = calibrate_listener();
+	if (time_unit == EOF) {
+		return 0;
+	}
 	if (!spawn_listener()) {
 		print_error("error creating thread");
 		return 1;
 	}
 
-	char buf[512] = {0};
-	int bufind=0;
-
-	// Initialize the state.
-	enum { IDLE, DOT, DASH, CHAR, WORD } mode = IDLE;
-	int prev_char = -5;
-	long time = current_millis();
-
 	// Begin the main loop.
+	char buf[1024] = {0};
+	int index = 0;
 	for (;;) {
-		long time_now = current_millis();
-		long elapsed = time_now - time;
-		switch (get_listener_state(time_now)) {
-		case EOF:
-	printf("\e[?25h");
-			return 0;
-		default:
-			switch (mode) {
-			case IDLE:
-				mode = DOT;
-				time = time_now;
-				break;
-			case DOT:
-				if (elapsed > time_unit * time_dot) {
-					mode = DASH;
-					time = time_now;
-				}
-				break;
-			case DASH:
-				if (elapsed > time_unit * time_dash) {
-					mode = IDLE;
-					time = time_now;
-				}
-				break;
-			case CHAR:
-				mode = DOT;
-				time = time_now;
-				break;
-			case WORD:
-				mode = DOT;
-				time = time_now;
-				break;
-			}
+		int count = get_listener_count();
+		if (count == EOF) {
 			break;
-		case 0:
-			switch (mode) {
-			case IDLE:
-				break;
-			case DOT:
-				buf[bufind++] = '.';
-				mode = CHAR;
-				time = time_now;
-				break;
-			case DASH:
-				buf[bufind++] = '-';
-				mode = CHAR;
-				time = time_now;
-				break;
-			case CHAR:
-				if (elapsed > time_unit * time_between_signals) {
-					buf[bufind++] = ' ';
-					mode = WORD;
-					time = time_now;
-				}
-				break;
-			case WORD:
-				if (elapsed > time_unit * time_between_letters) {
-					buf[bufind++] = '/';
-					buf[bufind++] = ' ';
-					mode = IDLE;
-					time = time_now;
-				}
-				break;
+		}
+		if (count != 0) {
+			if (count == 1) {
+				buf[index++] = '.';
+			} else {
+				buf[index++] = '-';
 			}
-			break;
 		}
 		putchar('\r');
 		fputs(buf, stdout);
-		usleep(10);
+		fflush(stdout);
+		usleep(1000);
 	}
-	printf("\e[?25h");
+
+	set_cursor(true);
 	return 0;
 }

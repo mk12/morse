@@ -7,7 +7,6 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <termios.h>
-#include <time.h>
 #include <unistd.h>
 
 // End-of-transmission character.
@@ -21,8 +20,16 @@ static const long kbd_threshold = 10;
 static long kbd_repeat_delay;
 static long kbd_repeat_interval;
 
-// The most recent keyboard input.
-static int kbd_input = 0;
+// Keyboard input flags representing whether there is new input and whether an
+// end-of-file condition has been encountered. Both must only be accessed after
+// locking the mutex.
+
+// Flags representing whether the listener has detected a new key press and
+// whether it has encountered an end-of-file condition. Both must only be
+// accessed after locking the mutex.
+static bool listener_new = false;
+static bool listener_eof = false;
+static pthread_mutex_t listener_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 // Make standard input unbuffered by turning off canonical mode.
 static void use_unbuffered_input(void) {
@@ -38,36 +45,58 @@ static void *listen(void *arg) {
 
 	for (;;) {
 		// Get a character (this blocks).
-		const int ch = getchar();
-		if (ch == EOF || ch == EOT) {
-			kbd_input = EOF;
+		int ch = getchar();
+		bool eof = ch == EOF || ch == EOT;
+
+		// Synchronize and write to the global flags.
+		pthread_mutex_lock(&listener_mutex);
+		listener_new = true;
+		listener_eof = eof;
+		pthread_mutex_unlock(&listener_mutex);
+
+		if (eof) {
 			break;
 		}
-		kbd_input = ch;
 		usleep(10);
 	}
 	return NULL;
 }
 
-void calibrate_listener(void) {
+int calibrate_listener(void) {
 	use_unbuffered_input();
 
 	// Prompt the user and wait for three characters.
-	fputs("Press and hold the space bar for 1 second: ", stdout);
-	getchar();
+	fputs("Press and hold any key... ", stdout);
+	int ch;
+	ch = getchar();
+	if (ch == EOF || ch == EOT) {
+		return EOF;
+	}
 	long t0 = current_millis();
-	getchar();
+	ch = getchar();
+	if (ch == EOF || ch == EOT) {
+		return EOF;
+	}
 	long t1 = current_millis();
-	getchar();
+	ch = getchar();
+	if (ch == EOF || ch == EOT) {
+		return EOF;
+	}
 	long t2 = current_millis();
-	fputs("\nCalibrating complete!\nPress enter to continue... ", stdout);
-	char ch;
-	while ((ch = getchar()) != EOF && ch != '\n');
+
+	// Wait for the user to hit return.
+	fputs("\nCalibrating complete.\nPress return to continue... ", stdout);
+	while ((ch = getchar()) != '\n') {
+		if (ch == EOF || ch == EOT) {
+			return EOF;
+		}
+	}
 
 	// Set the keyboard parameters.
 	kbd_repeat_delay = t1 - t0;
 	kbd_repeat_interval = t2 - t1;
-	printf("delay: %ld\nrepeat: %ld\n", t1-t0,t2-t1);
+
+	return 0;
 }
 
 bool spawn_listener(void) {
@@ -75,68 +104,60 @@ bool spawn_listener(void) {
 	return pthread_create(&listen_thread, NULL, listen, NULL) == 0;
 }
 
-int get_listener_state(long time_now) {
-	static int input = 0;
+int get_listener_count(void) {
+	static int count = 0;
 	static long time = 0;
 	static enum { IDLE, DELAY, REPEAT } mode = IDLE;
 
-	// Read the keyboard input set by the listener thread, and reset it.
-	int kbdi = kbd_input;
-	if (kbdi == EOF) {
-		return EOF;
-	}
-	kbd_input = 0;
+	// Synchronize and check for new input from the listener thread.
+	bool new_press = false;
+	bool eof = false;
+	pthread_mutex_lock(&listener_mutex);
+	if (listener_new) {
+		new_press = true;
+		eof = listener_eof;
 
-	// Check if a new character has been received, and save it.
-	bool pressed_now = kbdi != 0;
-	if (pressed_now) {
-		input = kbdi;
+		// Reset the flag now that we've seen it.
+		listener_new = false;
+	}
+	pthread_mutex_unlock(&listener_mutex);
+	if (eof) {
+		return EOF;
 	}
 
 	// Get the time passed since the last event.
+	long time_now = current_millis();
 	long elapsed = time_now - time;
 
 	switch (mode) {
 	case IDLE:
-		if (pressed_now) {
+		if (new_press) {
 			time = time_now;
 			mode = DELAY;
-			return input;
-		} else {
+		}
+		return 0;
+	case DELAY:
+		if (new_press) {
+			count = 2;
+			time = time_now;
+			mode = REPEAT;
 			return 0;
 		}
-	case DELAY:
-		if (pressed_now) {
-			if (elapsed < kbd_repeat_delay - kbd_threshold) {
-				time = time_now;
-				return input;
-			} else {
-				time = time_now;
-				mode = REPEAT;
-				return input;
-			}
-		} else {
-			if (elapsed < kbd_repeat_delay + kbd_threshold) {
-				return input;
-			} else {
-				mode = IDLE;
-				return 0;
-			}
+		if (elapsed < kbd_repeat_delay + kbd_threshold) {
+			return 0;
 		}
+		mode = IDLE;
+		return 1;
 	case REPEAT:
-		if (pressed_now) {
-			if (elapsed < kbd_repeat_interval - kbd_threshold) {
-				printf("Hmm... that was fast\n");
-			}
+		if (new_press) {
+			count++;
 			time = time_now;
-			return input;
-		} else {
-			if (elapsed < kbd_repeat_interval + kbd_threshold) {
-				return input;
-			} else {
-				mode = IDLE;
-				return 0;
-			}
+			return 0;
 		}
+		if (elapsed < kbd_repeat_interval + kbd_threshold) {
+			return 0;
+		}
+		mode = IDLE;
+		return count;
 	}
 }
