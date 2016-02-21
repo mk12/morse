@@ -17,22 +17,11 @@ void setup_util(const char *program_name) {
 }
 
 void print_usage(FILE *out) {
-	fprintf(out, "usage: %s [-e | -d | -t time_unit]\n", prog_name);
+	fprintf(out, "usage: %s [-e | -d | -t]\n", prog_name);
 }
 
 void print_error(const char *msg) {
 	fprintf(stderr, "%s: %s\n", prog_name, msg);
-}
-
-bool parse_int(int *out, const char *str) {
-	char *end;
-	int n = (int)strtol(str, &end, 0);
-	if (*end) {
-		fprintf(stderr, "%s: %s: not an integer\n", prog_name, str);
-		return false;
-	}
-	*out = n;
-	return true;
 }
 
 long current_millis(void) {
