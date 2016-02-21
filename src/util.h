@@ -3,17 +3,22 @@
 #ifndef UTIL_H
 #define UTIL_H
 
-// The name of the executable. Set in main.
-extern const char *prog_name;
+#include <stdbool.h>
+#include <stdio.h>
 
-// Prints the usage message to stdout if the status is zero, and to stderr if it
-// is nonzero. Returns the status for convenience.
-int print_usage(int status);
+// Performs necessary setup. Must be called once when the program starts.
+void setup_util(const char *program_name);
 
-// Prints an error message to stderr. Returns 1 for convenience.
-int print_error(const char *msg);
+// Prints the usage message to the given output stream.
+void print_usage(FILE *out);
 
-// Parse a string as an int. Exits on failure.
-int parse_int(const char *str);
+// Prints an error message to stderr.
+void print_error(const char *msg);
+
+// Parse a string as an int. Returns true on success.
+bool parse_int(int *out, const char *str);
+
+// Returns the time in milliseconds since the program started.
+long current_millis(void);
 
 #endif

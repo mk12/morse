@@ -1,16 +1,14 @@
 // Copyright 2016 Mitchell Kember. Subject to the MIT License.
 
-#include "interact.h"
 #include "translate.h"
+#include "transmit.h"
 #include "util.h"
 
-#include <stdbool.h>
 #include <stdio.h>
 #include <unistd.h>
 
 int main(int argc, char **argv) {
-	// Set the program name.
-	prog_name = argv[0];
+	setup_util(argv[0]);
 
 	// Initialize options to default values.
 	int mode = 'e';
@@ -20,12 +18,15 @@ int main(int argc, char **argv) {
 	int c;
 	extern char *optarg;
 	extern int optind, optopt;
-	while ((c = getopt(argc, argv, "hedi:")) != -1) {
+	while ((c = getopt(argc, argv, "hedt:")) != -1) {
 		switch (c) {
 		case 'h':
-			return print_usage(0);
-		case 'i':
-			time_unit = parse_int(optarg);
+			print_usage(stdout);
+			return 0;
+		case 't':
+			if (!parse_int(&time_unit, optarg)) {
+				return 1;
+			}
 			// fall through
 		case 'e':
 		case 'd':
@@ -37,7 +38,8 @@ int main(int argc, char **argv) {
 	}
 	// Make sure all arguments were processed.
 	if (optind != argc) {
-		return print_usage(1);
+		print_usage(stderr);
+		return 1;
 	}
 
 	// Dispatch to the chosen subprogram.
@@ -46,7 +48,7 @@ int main(int argc, char **argv) {
 		return encode();
 	case 'd':
 		return decode();
-	case 'i':
-		return interact(time_unit);
+	case 't':
+		return transmit(time_unit);
 	}
 }
