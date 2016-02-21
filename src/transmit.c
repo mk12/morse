@@ -3,6 +3,7 @@
 #include "transmit.h"
 
 #include "circle.h"
+#include "code.h"
 #include "listen.h"
 #include "util.h"
 
@@ -11,12 +12,15 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-// Size of the circular buffer.
-#define BUF_SIZE 10
+// Size of the circular buffers.
+#define BUF_SIZE 80
 
 // Time constants, in milliseconds.
 #define TIME_BETWEEN_CHARS 500
 #define TIME_BETWEEN_WORDS 1500
+
+// Sleep time for the main loop, in microseconds.
+#define SLEEP_TIME_US 1000
 
 // Shows or hides the cursor in the terminal.
 static void set_cursor(bool show) {
@@ -31,7 +35,12 @@ static void set_cursor(bool show) {
 static void sigint_handler(int) __attribute__((noreturn));
 static void sigint_handler(int sig) {
 	(void)sig;
+
+	// Restore the cursor, and print two newlines so that the circular buffer
+	// lines don't get replaced by the shell prompt.
 	set_cursor(true);
+	putchar('\n');
+	putchar('\n');
 	exit(0);
 }
 
@@ -50,15 +59,20 @@ int transmit(void) {
 		return 1;
 	}
 
-	// Set up the circular buffer.
-	char buf[BUF_SIZE] = {'*'};
-	struct Circle circ = { .buf = buf, .size = BUF_SIZE, .index = 0 };
+	// Set up the circular buffers.
+	char code_buf[BUF_SIZE] = {'*'};
+	char text_buf[BUF_SIZE] = {0};
+	struct Circle code_circ = { .buf = code_buf, .size = BUF_SIZE };
+	struct Circle text_circ = { .buf = text_buf, .size = BUF_SIZE, .index = BUF_SIZE - 1 };
 
 	// Begin the main loop.
+	Code code = 0;
+	int code_size = 0;
 	bool done = false;
 	long time = current_millis();
 	enum { NONE, CHAR, WORD } wait_mode = NONE;
 	while (!done) {
+		// Check the state of the keyboard listener.
 		long time_now = current_millis();
 		enum ListenerState state = get_listener_state(time_now);
 		switch (state) {
@@ -68,52 +82,70 @@ int transmit(void) {
 		case LS_NONE:
 			break;
 		case LS_DOWN:
-			if (peek(&circ) == '_') {
-				insert(&circ, ' ');
-				advance(&circ);
+			if (peek(&code_circ) == '_') {
+				insert(&code_circ, ' ');
+				advance(&code_circ);
 			}
-			insert(&circ, '.');
+			insert(&code_circ, '.');
 			wait_mode = NONE;
+			code <<= 1;
+			code_size++;
 			break;
 		case LS_REPEAT:
-			insert(&circ, '-');
+			insert(&code_circ, '-');
+			code |= 1;
 			break;
 		case LS_HOLD:
 		case LS_HOLD_R:
 			break;
 		case LS_UP:
-			append(&circ, '*');
+			append(&code_circ, '*');
 			time = time_now;
 			wait_mode = CHAR;
 			break;
 		}
 
+		// Check if enough time has passed to start a new character or word.
 		long elapsed = time_now - time;
 		switch (wait_mode) {
 		case NONE:
 			break;
 		case CHAR:
 			if (elapsed > TIME_BETWEEN_CHARS) {
-				insert(&circ, ' ');
-				append(&circ, '*');
+				insert(&code_circ, ' ');
+				append(&code_circ, '*');
 				wait_mode = WORD;
+
+				char decoded = '?';
+				if (code_size <= MAX_SIZE) {
+					code = add_size(code, code_size);
+					decoded = code_to_char(code);
+				}
+				append(&text_circ, decoded);
+				code = 0;
+				code_size = 0;
 			}
 			break;
 		case WORD:
 			if (elapsed > TIME_BETWEEN_WORDS) {
-				insert(&circ, '/');
-				append(&circ, ' ');
-				append(&circ, '*');
+				insert(&code_circ, '/');
+				append(&code_circ, ' ');
+				append(&code_circ, '*');
 				wait_mode = NONE;
+				append(&text_circ, ' ');
 			}
 			break;
 		}
 
+		// Print the contents of both buffers.
 		putchar('\r');
-		print_circle(&circ);
-		putchar(' ');
-		putchar(' ');
-		usleep(100);
+		print_circle(&code_circ);
+		fputs("   \n", stdout);
+		print_circle(&text_circ);
+		fputs("   \x1B[F", stdout);
+		fflush(stdout);
+
+		usleep(SLEEP_TIME_US);
 	}
 
 	set_cursor(true);

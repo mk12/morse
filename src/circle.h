@@ -10,6 +10,9 @@ struct Circle {
 	int index;
 };
 
+// Returns the character at the current position of the circular buffer.
+char peek(const struct Circle *c);
+
 // Inserts a character into the current position of the circular buffer.
 void insert(struct Circle *c, char ch);
 
@@ -18,9 +21,6 @@ void advance(struct Circle *c);
 
 // Equivalent to advancing and then inserting.
 void append(struct Circle *c, char ch);
-
-// Returns the character at the current position of the circular buffer.
-char peek(const struct Circle *c);
 
 // Prints the circular buffer to stdout.
 void print_circle(const struct Circle *c);

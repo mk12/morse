@@ -4,6 +4,10 @@
 
 #include <stdio.h>
 
+char peek(const struct Circle *c) {
+	return c->buf[c->index];
+}
+
 void insert(struct Circle *c, char ch) {
 	c->buf[c->index] = ch;
 }
@@ -15,10 +19,6 @@ void advance(struct Circle *c) {
 void append(struct Circle *c, char ch) {
 	advance(c);
 	insert(c, ch);
-}
-
-char peek(const struct Circle *c) {
-	return c->buf[c->index];
 }
 
 void print_circle(const struct Circle *c) {
