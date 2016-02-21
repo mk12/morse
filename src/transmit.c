@@ -2,6 +2,7 @@
 
 #include "transmit.h"
 
+#include "circle.h"
 #include "listen.h"
 #include "util.h"
 
@@ -9,6 +10,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+
+// Size of the circular buffer.
+#define BUF_SIZE 10
 
 // Time constants, in milliseconds.
 #define TIME_BETWEEN_CHARS 500
@@ -46,11 +50,13 @@ int transmit(void) {
 		return 1;
 	}
 
+	// Set up the circular buffer.
+	char buf[BUF_SIZE] = {'*'};
+	struct Circle circ = { .buf = buf, .size = BUF_SIZE, .index = 0 };
+
 	// Begin the main loop.
 	bool done = false;
 	long time = current_millis();
-	int index = 0;
-	char buf[1024] = {0};
 	enum { NONE, CHAR, WORD } wait_mode = NONE;
 	while (!done) {
 		long time_now = current_millis();
@@ -62,20 +68,21 @@ int transmit(void) {
 		case LS_NONE:
 			break;
 		case LS_DOWN:
-			if (buf[index] == '_') {
-				buf[index++] = ' ';
+			if (peek(&circ) == '_') {
+				insert(&circ, ' ');
+				advance(&circ);
 			}
-			buf[index] = '.';
+			insert(&circ, '.');
 			wait_mode = NONE;
 			break;
 		case LS_REPEAT:
-			buf[index] = '-';
+			insert(&circ, '-');
 			break;
 		case LS_HOLD:
 		case LS_HOLD_R:
 			break;
 		case LS_UP:
-			buf[++index] = '*';
+			append(&circ, '*');
 			time = time_now;
 			wait_mode = CHAR;
 			break;
@@ -87,24 +94,25 @@ int transmit(void) {
 			break;
 		case CHAR:
 			if (elapsed > TIME_BETWEEN_CHARS) {
-				buf[index++] = ' ';
-				buf[index] = '*';
+				insert(&circ, ' ');
+				append(&circ, '*');
 				wait_mode = WORD;
 			}
 			break;
 		case WORD:
 			if (elapsed > TIME_BETWEEN_WORDS) {
-				buf[index++] = '/';
-				buf[index++] = ' ';
-				buf[index] = '*';
+				insert(&circ, '/');
+				append(&circ, ' ');
+				append(&circ, '*');
 				wait_mode = NONE;
 			}
 			break;
 		}
 
 		putchar('\r');
-		fputs(buf, stdout);
-		fflush(stdout);
+		print_circle(&circ);
+		putchar(' ');
+		putchar(' ');
 		usleep(100);
 	}
 
