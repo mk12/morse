@@ -8,6 +8,17 @@ This program is a Morse code utility. It has three modes:
 
 It supports ASCII letters, numbers, and most punctuation. See [code.c](src/code.c) for the full list.
 
+## Build
+
+I use the [tup build system][1] for this project. On OS X, it's easy:
+
+1. `brew install homebrew/fuse/tup`
+2. `cd /path/to/morse`
+3. `tup`
+4. `bin/morse`
+
+[1]: http://gittup.org/tup/
+
 ## Usage
 
 The encode and decode modes operate on streams, so you can use them interactively or in pipelines.
