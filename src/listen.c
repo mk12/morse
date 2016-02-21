@@ -104,8 +104,7 @@ bool spawn_listener(void) {
 	return pthread_create(&listen_thread, NULL, listen, NULL) == 0;
 }
 
-int get_listener_count(void) {
-	static int count = 0;
+enum ListenerState get_listener_state(long time_now) {
 	static long time = 0;
 	static enum { IDLE, DELAY, REPEAT } mode = IDLE;
 
@@ -122,11 +121,10 @@ int get_listener_count(void) {
 	}
 	pthread_mutex_unlock(&listener_mutex);
 	if (eof) {
-		return EOF;
+		return LS_EOF;
 	}
 
 	// Get the time passed since the last event.
-	long time_now = current_millis();
 	long elapsed = time_now - time;
 
 	switch (mode) {
@@ -134,30 +132,38 @@ int get_listener_count(void) {
 		if (new_press) {
 			time = time_now;
 			mode = DELAY;
+			return LS_DOWN;
 		}
-		return 0;
+		return LS_NONE;
 	case DELAY:
 		if (new_press) {
-			count = 2;
+			if (elapsed < kbd_repeat_interval + kbd_threshold) {
+				mode = IDLE;
+				return LS_NONE;
+			}
+			if (elapsed < kbd_repeat_delay - kbd_threshold) {
+				time = time_now;
+				mode = DELAY;
+				return LS_UP;
+			}
 			time = time_now;
 			mode = REPEAT;
-			return 0;
+			return LS_REPEAT;
 		}
 		if (elapsed < kbd_repeat_delay + kbd_threshold) {
-			return 0;
+			return LS_HOLD;
 		}
 		mode = IDLE;
-		return 1;
+		return LS_UP;
 	case REPEAT:
 		if (new_press) {
-			count++;
 			time = time_now;
-			return 0;
+			return LS_HOLD_R;
 		}
 		if (elapsed < kbd_repeat_interval + kbd_threshold) {
-			return 0;
+			return LS_HOLD_R;
 		}
 		mode = IDLE;
-		return count;
+		return LS_UP;
 	}
 }

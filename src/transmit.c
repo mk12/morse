@@ -10,6 +10,10 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+// Time constants, in milliseconds.
+static const long time_between_chars = 500;
+static const long time_between_words = 1500;
+
 // Shows or hides the cursor in the terminal.
 static void set_cursor(bool show) {
 	if (show) {
@@ -42,51 +46,60 @@ int transmit(void) {
 		return 1;
 	}
 
-	// ...
-	char buf[1024] = {0};
-	int index = 0;
-	long time = current_millis();
-	long count;
-	enum { IDLE, CHAR, WORD } mode = IDLE;
-
 	// Begin the main loop.
-	while ((count = get_listener_count()) != EOF) {
+	bool done = false;
+	long time = current_millis();
+	int index = 0;
+	char buf[1024] = {0};
+	enum { NONE, CHAR, WORD } wait_mode = NONE;
+	while (!done) {
 		long time_now = current_millis();
-		long elapsed = time_now - time;
-		if (count != 0) {
-			if (count == 1) {
-				buf[index++] = '.';
-			} else {
-				buf[index++] = '-';
-			}
+		enum ListenerState state = get_listener_state(time_now);
+		switch (state) {
+		case LS_EOF:
+			done = true;
+			continue;
+		case LS_NONE:
+			break;
+		case LS_DOWN:
+			buf[index] = '.';
+			wait_mode = NONE;
+			break;
+		case LS_REPEAT:
+			buf[index] = '-';
+			break;
+		case LS_HOLD:
+		case LS_HOLD_R:
+			break;
+		case LS_UP:
+			index++;
 			time = time_now;
-			mode = CHAR;
-		} else {
-			switch (mode) {
-			case IDLE:
-				break;
-			case CHAR:
-				if (elapsed > 700) {
-					buf[index++] = ' ';
-					mode = WORD;
-					time = time_now;
-				}
-				break;
-			case WORD:
-				if (elapsed > 700) {
-					buf[index++] = '/';
-					buf[index++] = ' ';
-					mode = IDLE;
-					time = time_now;
-				}
-				break;
+			wait_mode = CHAR;
+			break;
+		}
+
+		long elapsed = time_now - time;
+		switch (wait_mode) {
+		case NONE:
+			break;
+		case CHAR:
+			if (elapsed > time_between_chars) {
+				buf[index++] = '_';
+				wait_mode = WORD;
 			}
+			break;
+		case WORD:
+			if (elapsed > time_between_words) {
+				buf[index++] = '/';
+				buf[index++] = '_';
+				wait_mode = NONE;
+			}
+			break;
 		}
-		if (time == time_now) {
-			putchar('\r');
-			fputs(buf, stdout);
-			fflush(stdout);
-		}
+
+		putchar('\r');
+		fputs(buf, stdout);
+		fflush(stdout);
 		usleep(1000);
 	}
 
