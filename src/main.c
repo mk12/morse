@@ -10,26 +10,21 @@
 int main(int argc, char **argv) {
 	setup_util(argv[0]);
 
-	// Initialize options to default values.
+	// Initialize the default mode.
 	int mode = 'e';
-	int time_unit = 0;
 
 	// Get command line options.
 	int c;
 	extern char *optarg;
 	extern int optind, optopt;
-	while ((c = getopt(argc, argv, "hedt:")) != -1) {
+	while ((c = getopt(argc, argv, "hedt")) != -1) {
 		switch (c) {
 		case 'h':
 			print_usage(stdout);
 			return 0;
-		case 't':
-			if (!parse_int(&time_unit, optarg)) {
-				return 1;
-			}
-			// fall through
 		case 'e':
 		case 'd':
+		case 't':
 			mode = c;
 			break;
 		case '?':
@@ -49,6 +44,6 @@ int main(int argc, char **argv) {
 	case 'd':
 		return decode();
 	case 't':
-		return transmit(time_unit);
+		return transmit();
 	}
 }
