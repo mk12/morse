@@ -10,6 +10,9 @@ struct Circle {
 	int index;
 };
 
+// Initializes an empty circular buffer.
+void init_empty(struct Circle *c, char *buf, int size);
+
 // Returns the character at the current position of the circular buffer.
 char peek(const struct Circle *c);
 

@@ -5,12 +5,15 @@
 #include <assert.h>
 #include <stdio.h>
 
+// Limits for the conversion tables.
 #define CODE_LIMIT 512
 #define CHAR_LIMIT 128
 
+// Constants for the Mores code memory format.
 #define N_SIZE_BITS 3
 #define SIZE_MASK 0b111
 
+// Table that maps characters to codes.
 static const Code code_table[CHAR_LIMIT] = {
 	// Digits
 	['0'] = 0b11111101,
@@ -67,6 +70,7 @@ static const Code code_table[CHAR_LIMIT] = {
 	['Z'] = 0b1100100
 };
 
+// Table that maps codes to characters.
 static const char char_table[CODE_LIMIT] = {
 	// Digits
 	[0b11111101] = '0',

@@ -1,7 +1,7 @@
 CC = clang
 OPTIONS = -std=c11 -Os
 WARNINGS = -Weverything -pedantic
-NOWARNINGS = -Wno-gnu-binary-literal
+NOWARNINGS = -Wno-gnu-binary-literal -Wno-vla
 COMPILE = $(CC) $(OPTIONS) $(WARNINGS) $(NOWARNINGS) -c
 LINK = $(CC) -lpthread
 

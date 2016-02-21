@@ -3,6 +3,14 @@
 #include "circle.h"
 
 #include <stdio.h>
+#include <string.h>
+
+void init_empty(struct Circle *c, char *buf, int size) {
+	memset(buf, 0, size);
+	c->buf = buf;
+	c->size = size;
+	c->index = size - 1;
+}
 
 char peek(const struct Circle *c) {
 	return c->buf[c->index];

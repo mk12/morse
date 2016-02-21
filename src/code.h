@@ -5,7 +5,11 @@
 
 #include <stdbool.h>
 
+// The maximum number of dots and dashes in a code.
 #define MAX_SIZE 7
+
+// Character representing an invalid code.
+#define INVALID_CODE '?'
 
 // A Code is a Morse code representation of one character. It uses off bits (0)
 // to represent dots and on bits (1) to represent dashes. The number of bits

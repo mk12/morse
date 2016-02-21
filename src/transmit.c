@@ -10,10 +10,14 @@
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/ioctl.h>
 #include <unistd.h>
 
-// Size of the circular buffers.
-#define BUF_SIZE 80
+// The maximum number of terminal columns to use.
+#define MAX_COLUMNS 128
+
+// The number of extra columns to leave, to avoid input going too far.
+#define EXTRA_COLUMNS 5
 
 // Time constants, in milliseconds.
 #define TIME_BETWEEN_CHARS 500
@@ -29,6 +33,14 @@ static void set_cursor(bool show) {
 	} else {
 		fputs("\x1B[?25l", stdout);
 	}
+}
+
+// Returns the number of terminal columns that should be used.
+static int number_of_columns(void) {
+	struct winsize ws;
+	ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws);
+	int n = ws.ws_col - EXTRA_COLUMNS;
+	return n > MAX_COLUMNS ? MAX_COLUMNS : n;
 }
 
 // Handles SIGINT, the interrupt signal (Ctrl-C).
@@ -60,10 +72,13 @@ int transmit(void) {
 	}
 
 	// Set up the circular buffers.
-	char code_buf[BUF_SIZE] = {'*'};
-	char text_buf[BUF_SIZE] = {0};
-	struct Circle code_circ = { .buf = code_buf, .size = BUF_SIZE };
-	struct Circle text_circ = { .buf = text_buf, .size = BUF_SIZE, .index = BUF_SIZE - 1 };
+	int buf_size = number_of_columns();
+	char code_buf[buf_size];
+	char text_buf[buf_size];
+	struct Circle code_circ, text_circ;
+	init_empty(&code_circ, code_buf, buf_size);
+	init_empty(&text_circ, text_buf, buf_size);
+	append(&code_circ, '*');
 
 	// Begin the main loop.
 	Code code = 0;
@@ -116,7 +131,7 @@ int transmit(void) {
 				append(&code_circ, '*');
 				wait_mode = WORD;
 
-				char decoded = '?';
+				char decoded = INVALID_CODE;
 				if (code_size <= MAX_SIZE) {
 					code = add_size(code, code_size);
 					decoded = code_to_char(code);

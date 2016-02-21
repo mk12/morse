@@ -7,9 +7,6 @@
 #include <stdbool.h>
 #include <stdio.h>
 
-// The character to print when given invalid Morse code.
-static const char not_decodable = '?';
-
 // Transforms a character, if possible, to make it encodable.
 static char transform(char ch) {
 	if (ch >= 'a' && ch <= 'z') {
@@ -90,12 +87,12 @@ int decode(void) {
 			if (size > 0) {
 				if (size > MAX_SIZE) {
 					// The sequence of dots and dashes was too long.
-					putchar(not_decodable);
+					putchar(INVALID_CODE);
 				} else {
 					// Decode and print the character if possible.
 					code = add_size(code, size);
 					char dec = code_to_char(code);
-					putchar(dec ? dec : not_decodable);
+					putchar(dec ? dec : INVALID_CODE);
 				}
 				first = false;
 				code = 0;
