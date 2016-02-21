@@ -3,9 +3,9 @@
 #ifndef TRANSMIT_H
 #define TRANSMIT_H
 
-// Allows the user to input Morse code by tapping keys on the keyboard. Prints
-// the code, the decoded characters, and timing visuals in an interactive,
-// ncurses-like manner. Returns 0 on success, 1 on failure.
+// Allows the user to input Morse code by tapping a key on the keyboard. Prints
+// the dots and dashes and decoded characters interactively as the key is
+// pressed. Returns 0 on success, 1 on failure.
 int transmit(void);
 
 #endif

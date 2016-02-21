@@ -12,9 +12,9 @@
 // End-of-transmission character.
 static const int EOT = 4;
 
-// Threshold for keyboard repeat parameters, in milliseconds. The parameters are
-// expected to be at least this accurate.
-static const long kbd_threshold = 10;
+// Threshold for keyboard repeat parameters, in milliseconds.
+static const long kbd_repeat_delay_thresh = 5;
+static const long kbd_repeat_interval_thresh = 40;
 
 // Keyboard repeat parameters, in milliseconds.
 static long kbd_repeat_delay;
@@ -93,8 +93,8 @@ int calibrate_listener(void) {
 	}
 
 	// Set the keyboard parameters.
-	kbd_repeat_delay = t1 - t0;
-	kbd_repeat_interval = t2 - t1;
+	kbd_repeat_delay = t1 - t0 + kbd_repeat_delay_thresh;
+	kbd_repeat_interval = t2 - t1 + kbd_repeat_interval_thresh;
 
 	return 0;
 }
@@ -137,22 +137,14 @@ enum ListenerState get_listener_state(long time_now) {
 		return LS_NONE;
 	case DELAY:
 		if (new_press) {
-			if (elapsed < kbd_repeat_interval + kbd_threshold) {
-				mode = IDLE;
-				return LS_NONE;
-			}
-			if (elapsed < kbd_repeat_delay - kbd_threshold) {
-				time = time_now;
-				mode = DELAY;
-				return LS_UP;
-			}
 			time = time_now;
 			mode = REPEAT;
 			return LS_REPEAT;
 		}
-		if (elapsed < kbd_repeat_delay + kbd_threshold) {
+		if (elapsed < kbd_repeat_delay) {
 			return LS_HOLD;
 		}
+		time = time_now;
 		mode = IDLE;
 		return LS_UP;
 	case REPEAT:
@@ -160,9 +152,10 @@ enum ListenerState get_listener_state(long time_now) {
 			time = time_now;
 			return LS_HOLD_R;
 		}
-		if (elapsed < kbd_repeat_interval + kbd_threshold) {
+		if (elapsed < kbd_repeat_interval) {
 			return LS_HOLD_R;
 		}
+		time = time_now;
 		mode = IDLE;
 		return LS_UP;
 	}

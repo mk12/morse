@@ -25,8 +25,8 @@ static void set_cursor(bool show) {
 
 // Handles SIGINT, the interrupt signal (Ctrl-C).
 static void sigint_handler(int) __attribute__((noreturn));
-static void sigint_handler(int unused) {
-	(void)unused;
+static void sigint_handler(int sig) {
+	(void)sig;
 	set_cursor(true);
 	exit(0);
 }
@@ -62,6 +62,9 @@ int transmit(void) {
 		case LS_NONE:
 			break;
 		case LS_DOWN:
+			if (buf[index] == '_') {
+				buf[index++] = ' ';
+			}
 			buf[index] = '.';
 			wait_mode = NONE;
 			break;
@@ -72,7 +75,7 @@ int transmit(void) {
 		case LS_HOLD_R:
 			break;
 		case LS_UP:
-			index++;
+			buf[++index] = '*';
 			time = time_now;
 			wait_mode = CHAR;
 			break;
@@ -84,14 +87,16 @@ int transmit(void) {
 			break;
 		case CHAR:
 			if (elapsed > time_between_chars) {
-				buf[index++] = '_';
+				buf[index++] = ' ';
+				buf[index] = '*';
 				wait_mode = WORD;
 			}
 			break;
 		case WORD:
 			if (elapsed > time_between_words) {
 				buf[index++] = '/';
-				buf[index++] = '_';
+				buf[index++] = ' ';
+				buf[index] = '*';
 				wait_mode = NONE;
 			}
 			break;
@@ -100,7 +105,7 @@ int transmit(void) {
 		putchar('\r');
 		fputs(buf, stdout);
 		fflush(stdout);
-		usleep(1000);
+		usleep(100);
 	}
 
 	set_cursor(true);
