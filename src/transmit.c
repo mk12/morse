@@ -35,25 +35,28 @@ static void set_cursor(bool show) {
 	}
 }
 
-// Returns the number of terminal columns that should be used.
-static int number_of_columns(void) {
-	struct winsize ws;
-	ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws);
-	int n = ws.ws_col - EXTRA_COLUMNS;
-	return n > MAX_COLUMNS ? MAX_COLUMNS : n;
+// Cleanup to be performed before exiting. Restores the cursor and prints a
+// couple blank lines to prevent the shell prompt from overwriting the output.
+static void cleanup(void) {
+	set_cursor(true);
+	putchar('\n');
+	putchar('\n');
 }
 
 // Handles SIGINT, the interrupt signal (Ctrl-C).
 static void sigint_handler(int) __attribute__((noreturn));
 static void sigint_handler(int sig) {
 	(void)sig;
-
-	// Restore the cursor, and print two newlines so that the circular buffer
-	// lines don't get replaced by the shell prompt.
-	set_cursor(true);
-	putchar('\n');
-	putchar('\n');
+	cleanup();
 	exit(0);
+}
+
+// Returns the number of terminal columns that should be used.
+static int number_of_columns(void) {
+	struct winsize ws;
+	ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws);
+	int n = ws.ws_col - EXTRA_COLUMNS;
+	return n > MAX_COLUMNS ? MAX_COLUMNS : n;
 }
 
 int transmit(void) {
@@ -97,10 +100,6 @@ int transmit(void) {
 		case LS_NONE:
 			break;
 		case LS_DOWN:
-			if (peek(&code_circ) == '_') {
-				insert(&code_circ, ' ');
-				advance(&code_circ);
-			}
 			insert(&code_circ, '.');
 			wait_mode = NONE;
 			code <<= 1;
@@ -163,6 +162,6 @@ int transmit(void) {
 		usleep(SLEEP_TIME_US);
 	}
 
-	set_cursor(true);
+	cleanup();
 	return 0;
 }
