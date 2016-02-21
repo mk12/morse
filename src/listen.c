@@ -53,7 +53,6 @@ static void *listen(void *arg) {
 		if (eof) {
 			break;
 		}
-		usleep(10);
 	}
 	return NULL;
 }
