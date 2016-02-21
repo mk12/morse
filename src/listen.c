@@ -10,19 +10,15 @@
 #include <unistd.h>
 
 // End-of-transmission character.
-static const int EOT = 4;
+#define EOT 4
 
 // Threshold for keyboard repeat parameters, in milliseconds.
-static const long kbd_repeat_delay_thresh = 5;
-static const long kbd_repeat_interval_thresh = 40;
+#define DELAY_THRESHOLD 5
+#define INTERVAL_THRESHOLD 40
 
 // Keyboard repeat parameters, in milliseconds.
 static long kbd_repeat_delay;
 static long kbd_repeat_interval;
-
-// Keyboard input flags representing whether there is new input and whether an
-// end-of-file condition has been encountered. Both must only be accessed after
-// locking the mutex.
 
 // Flags representing whether the listener has detected a new key press and
 // whether it has encountered an end-of-file condition. Both must only be
@@ -93,8 +89,8 @@ int calibrate_listener(void) {
 	}
 
 	// Set the keyboard parameters.
-	kbd_repeat_delay = t1 - t0 + kbd_repeat_delay_thresh;
-	kbd_repeat_interval = t2 - t1 + kbd_repeat_interval_thresh;
+	kbd_repeat_delay = t1 - t0 + DELAY_THRESHOLD;
+	kbd_repeat_interval = t2 - t1 + INTERVAL_THRESHOLD;
 
 	return 0;
 }

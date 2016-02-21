@@ -11,8 +11,8 @@
 #include <unistd.h>
 
 // Time constants, in milliseconds.
-static const long time_between_chars = 500;
-static const long time_between_words = 1500;
+#define TIME_BETWEEN_CHARS 500
+#define TIME_BETWEEN_WORDS 1500
 
 // Shows or hides the cursor in the terminal.
 static void set_cursor(bool show) {
@@ -86,14 +86,14 @@ int transmit(void) {
 		case NONE:
 			break;
 		case CHAR:
-			if (elapsed > time_between_chars) {
+			if (elapsed > TIME_BETWEEN_CHARS) {
 				buf[index++] = ' ';
 				buf[index] = '*';
 				wait_mode = WORD;
 			}
 			break;
 		case WORD:
-			if (elapsed > time_between_words) {
+			if (elapsed > TIME_BETWEEN_WORDS) {
 				buf[index++] = '/';
 				buf[index++] = ' ';
 				buf[index] = '*';
