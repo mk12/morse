@@ -42,24 +42,51 @@ int transmit(void) {
 		return 1;
 	}
 
-	// Begin the main loop.
+	// ...
 	char buf[1024] = {0};
 	int index = 0;
-	for (;;) {
-		int count = get_listener_count();
-		if (count == EOF) {
-			break;
-		}
+	long time = current_millis();
+	long count;
+	enum { IDLE, CHAR, WORD } mode = IDLE;
+
+	// Begin the main loop.
+	while ((count = get_listener_count()) != EOF) {
+		long time_now = current_millis();
+		long elapsed = time_now - time;
 		if (count != 0) {
 			if (count == 1) {
 				buf[index++] = '.';
 			} else {
 				buf[index++] = '-';
 			}
+			time = time_now;
+			mode = CHAR;
+		} else {
+			switch (mode) {
+			case IDLE:
+				break;
+			case CHAR:
+				if (elapsed > 700) {
+					buf[index++] = ' ';
+					mode = WORD;
+					time = time_now;
+				}
+				break;
+			case WORD:
+				if (elapsed > 700) {
+					buf[index++] = '/';
+					buf[index++] = ' ';
+					mode = IDLE;
+					time = time_now;
+				}
+				break;
+			}
 		}
-		putchar('\r');
-		fputs(buf, stdout);
-		fflush(stdout);
+		if (time == time_now) {
+			putchar('\r');
+			fputs(buf, stdout);
+			fflush(stdout);
+		}
 		usleep(1000);
 	}
 
