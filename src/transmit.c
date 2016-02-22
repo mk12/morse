@@ -130,12 +130,15 @@ int transmit(void) {
 				append(&code_circ, '*');
 				wait_mode = WORD;
 
-				char decoded = INVALID_CODE;
+				char ch = INVALID_CODE;
 				if (code_size <= MAX_SIZE) {
 					code = add_size(code, code_size);
-					decoded = code_to_char(code);
+					char decoded = code_to_char(code);
+					if (decoded) {
+						ch = decoded;
+					}
 				}
-				append(&text_circ, decoded);
+				append(&text_circ, ch);
 				code = 0;
 				code_size = 0;
 			}
