@@ -9,9 +9,6 @@
 // Performs necessary setup. Must be called once when the program starts.
 void setup_util(const char *program_name);
 
-// Prints the usage message to the given output stream.
-void print_usage(FILE *out);
-
 // Prints an error message to stderr.
 void print_error(const char *msg);
 

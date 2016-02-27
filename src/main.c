@@ -7,6 +7,9 @@
 #include <stdio.h>
 #include <unistd.h>
 
+// The usage message for the program.
+static const char *usage_message = "usage: morse [-e | -d | -t]\n";
+
 int main(int argc, char **argv) {
 	setup_util(argv[0]);
 
@@ -20,7 +23,7 @@ int main(int argc, char **argv) {
 	while ((c = getopt(argc, argv, "hedt")) != -1) {
 		switch (c) {
 		case 'h':
-			print_usage(stdout);
+			fputs(usage_message, stdout);
 			return 0;
 		case 'e':
 		case 'd':
@@ -28,13 +31,13 @@ int main(int argc, char **argv) {
 			mode = c;
 			break;
 		case '?':
-			print_usage(stderr);
+			fputs(usage_message, stderr);
 			return 1;
 		}
 	}
 	// Make sure all arguments were processed.
 	if (optind != argc) {
-		print_usage(stderr);
+			fputs(usage_message, stderr);
 		return 1;
 	}
 

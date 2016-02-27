@@ -16,10 +16,6 @@ void setup_util(const char *program_name) {
 	gettimeofday(&startup_tv, NULL);
 }
 
-void print_usage(FILE *out) {
-	fprintf(out, "usage: %s [-e | -d | -t]\n", prog_name);
-}
-
 void print_error(const char *msg) {
 	fprintf(stderr, "%s: %s\n", prog_name, msg);
 }
