@@ -1,8 +1,8 @@
 CC = clang
-OPTIONS = -std=c11 -Os
+OPTIONS = -std=c11 -Os -DNDEBUG
 WARNINGS = -Weverything -pedantic
-NOWARNINGS = -Wno-gnu-binary-literal -Wno-vla
-COMPILE = $(CC) $(OPTIONS) $(WARNINGS) $(NOWARNINGS) -c
+WARNINGS += -Wno-gnu-binary-literal -Wno-vla
+COMPILE = $(CC) $(OPTIONS) $(WARNINGS) -c
 LINK = $(CC) -lpthread
 
 : foreach src/*.c |> ^ CC %f^ $(COMPILE) %f -o %o |> build/%B.o
