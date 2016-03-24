@@ -37,7 +37,7 @@ int main(int argc, char **argv) {
 	}
 	// Make sure all arguments were processed.
 	if (optind != argc) {
-			fputs(usage_message, stderr);
+		fputs(usage_message, stderr);
 		return 1;
 	}
 
