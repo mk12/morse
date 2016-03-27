@@ -8,7 +8,7 @@
 #include <unistd.h>
 
 // The usage message for the program.
-static const char *usage_message = "usage: morse [-e | -d | -t]\n";
+static const char *const usage_message = "usage: morse [-e | -d | -t]\n";
 
 int main(int argc, char **argv) {
 	setup_util(argv[0]);
