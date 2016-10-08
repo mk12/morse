@@ -1,9 +1,10 @@
 CC = clang
-OPTIONS = -std=c11 -Os -DNDEBUG
+LEVEL = -Os
+OPTIONS = -std=c11 -DNDEBUG
 WARNINGS = -Weverything -pedantic
 WARNINGS += -Wno-gnu-binary-literal -Wno-vla
-COMPILE = $(CC) $(OPTIONS) $(WARNINGS) -c
-LINK = $(CC) -lpthread
+COMPILE = $(CC) $(LEVEL) $(OPTIONS) $(WARNINGS) -c
+LINK = $(CC) $(LEVEL) -lpthread
 
 : foreach src/*.c |> ^ CC %f^ $(COMPILE) %f -o %o |> build/%B.o
 : build/*.o |> ^ Linking binary "morse"^ $(LINK) %f -o %o |> bin/morse
