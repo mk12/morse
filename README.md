@@ -10,14 +10,7 @@ It supports ASCII letters, numbers, and most punctuation. See [code.c](src/code.
 
 ## Build
 
-I use the [tup build system][1] for this project. On OS X, it's easy:
-
-1. `brew install homebrew/fuse/tup`
-2. `cd /path/to/morse`
-3. `tup`
-4. `bin/morse`
-
-[1]: http://gittup.org/tup/
+Just run `make`.
 
 ## Usage
 
