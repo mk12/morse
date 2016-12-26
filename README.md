@@ -17,13 +17,13 @@ Just run `make`.
 The encode and decode modes operate on streams, so you can use them interactively or in pipelines.
 
 ```sh
-$ morse -h
+$ bin/morse -h
 usage: morse [-e | -d | -t]
-$ echo "The quick brown fox" | morse -e
+$ echo "The quick brown fox" | bin/morse -e
 - .... . / --.- ..- .. -.-. -.- / -... .-. --- .-- -. / ..-. --- -..-
-$ echo "- .... . / --.- ..- .. -.-. -.-" | morse -d
+$ echo "- .... . / --.- ..- .. -.-. -.-" | bin/morse -d
 THE QUICK
-$ echo "- .... .. ... / .. ... / -- --- .-. ... . / -.-. --- -.. ." | morse -d
+$ echo "- .... .. ... / .. ... / -- --- .-. ... . / -.-. --- -.. ." | bin/morse -d
 THIS IS MORSE CODE
 ```
 
