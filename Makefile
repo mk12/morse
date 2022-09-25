@@ -1,36 +1,45 @@
-# Compiler
-CFLAGS := -std=c11 -W -Wall $(if $(DEBUG),-O0 -g,-O3 -DNDEBUG)
+# Copyright 2022 Mitchell Kember. Subject to the MIT License.
+
+define usage
+Targets:
+	all    Build morse
+	help   Show this help message
+	clean  Remove build output
+
+Variables:
+	DEBUG  If nonempty, build in debug mode
+endef
+
+.PHONY: all help clean
+
+CFLAGS := $(shell cat compile_flags.txt) $(if $(DEBUG),-O0 -g,-O3 -DNDEBUG)
+DEPFLAGS = -MMD -MP -MF $(@:.o=.d)
 LDFLAGS := $(if $(DEBUG),,-O3)
 LDLIBS := -lpthread
-DEPFLAGS = -MT $@ -MMD -MP -MF $(obj_dir)/$*.d
 
-# Project
-name := morse
-src_dir := src
-obj_dir := build
-bin_dir := bin
+src := $(wildcard src/*.c)
+obj := $(src:src/%.c=obj/%.o)
+dep := $(obj:.o=.d)
+bin := bin/morse
 
-# Files
-srcs := $(wildcard $(src_dir)/*.c)
-objs := $(srcs:$(src_dir)/%.c=$(obj_dir)/%.o)
-deps := $(objs:.o=.d)
-exec := $(bin_dir)/$(name)
+.SUFFIXES:
 
-.PHONY: all clean
+all: $(bin)
 
-all: $(exec)
+help:
+	$(info $(usage))
+	@:
 
 clean:
-	rm -f $(objs) $(deps) $(exec)
+	rm -rf obj bin
 
-$(exec): $(objs) | $(bin_dir)
-	$(CC) $(LDFLAGS) -o $@ $^ $(LDLIBS)
-
-$(obj_dir)/%.o: $(src_dir)/%.c | $(obj_dir)
-	$(CC) $(CFLAGS) $(DEPFLAGS) -c -o $@ $<
-
-$(obj_dir) $(bin_dir):
+obj bin:
 	mkdir $@
 
--include $(deps)
+$(obj): obj/%.o: src/%.c | obj
+	$(CC) $(CFLAGS) $(DEPFLAGS) -c -o $@ $<
 
+$(bin): $(obj) | bin
+	$(CC) $(LDFLAGS) -o $@ $^ $(LDLIBS)
+
+-include $(dep)
